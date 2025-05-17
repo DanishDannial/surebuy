@@ -1,0 +1,13 @@
+# Flutter build
+build/
+.dart_tool/
+.packages
+pubspec.lock
+
+# APKs & binaries
+*.apk
+*.dill
+
+# Others
+.idea/
+.vscode/

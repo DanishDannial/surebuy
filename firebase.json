@@ -1,0 +1,23 @@
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "surebuy-d380d",
+                    "appId": "1:63493614469:android:cacd1b6d3cd45d45b632ec",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "surebuy-d380d",
+                    "configurations": {
+                        "android": "1:63493614469:android:cacd1b6d3cd45d45b632ec",
+                        "ios": "1:63493614469:ios:c120234120377cdbb632ec",
+                        "web": "1:63493614469:web:c1c1e9cea086aed0b632ec"
+                    }
+                }
+            }
+        }
+    }
+}
