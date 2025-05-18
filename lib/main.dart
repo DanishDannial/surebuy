@@ -12,8 +12,10 @@ import 'package:surebuy/pages/payment_completion_page.dart';
 import 'package:surebuy/providers/cart_provider.dart';
 import 'package:uni_links5/uni_links.dart';
 import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
+  await dotenv.load();
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.android,

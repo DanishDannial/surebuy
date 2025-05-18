@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:surebuy/pages/customer_home.dart';
 import 'package:surebuy/pages/signup_page.dart';
 import 'package:surebuy/services/auth_service.dart';
@@ -79,63 +80,95 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<bool> _authenticateWithBiometricsAfterPassword() async {
+  final LocalAuthentication localAuth = LocalAuthentication();
+  bool canCheckBiometrics = await localAuth.canCheckBiometrics;
+  bool isDeviceSupported = await localAuth.isDeviceSupported();
+
+  if (!canCheckBiometrics || !isDeviceSupported) {
+    _showErrorSnackbar('Biometric authentication not supported on this device.');
+    return false;
+  }
+
+  try {
+    bool didAuthenticate = await localAuth.authenticate(
+      localizedReason: 'Please authenticate to continue',
+      options: const AuthenticationOptions(
+        biometricOnly: true,
+        useErrorDialogs: true,
+        stickyAuth: true,
+      ),
+    );
+    return didAuthenticate;
+  } catch (e) {
+    _showErrorSnackbar('Biometric authentication error: $e');
+    return false;
+  }
+}
+
   // Login function with lock handling
   void _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+  if (_formKey.currentState!.validate()) {
+    setState(() {
+      _isLoading = true;
+    });
 
-      String? result = await _authService.login(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
+    String? result = await _authService.login(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
 
-      setState(() {
-        _isLoading = false;
-      });
-      print("PRINT: $result");
-      switch (result) {
-        case 'SUCCESS':
+    setState(() {
+      _isLoading = false;
+    });
+
+    switch (result) {
+      case 'SUCCESS':
+        // Email/password is correct, now require biometric authentication
+        bool biometricSuccess = await _authenticateWithBiometricsAfterPassword();
+        if (biometricSuccess) {
           User? user = FirebaseAuth.instance.currentUser;
           if (user != null) {
             String? idToken = await user.getIdToken();
             await secureStorage.write(key: 'firebase_token', value: idToken);
             await secureStorage.write(
                 key: 'email', value: _emailController.text);
-            print("✅ Firebase token stored for biometric login.");
           }
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const CustomerHome()),
           );
-          break;
+        } else {
+          _showErrorSnackbar('Biometric authentication failed. Please try again.');
+          // Optionally, sign out the user if biometric fails
+          await FirebaseAuth.instance.signOut();
+        }
+        break;
 
-        case 'ERROR_USER_NOT_FOUND':
-          _showErrorSnackbar('User not found. Please check your email.');
-          break;
+      case 'ERROR_USER_NOT_FOUND':
+        _showErrorSnackbar('User not found. Please check your email.');
+        break;
 
-        case 'ERROR_WRONG_PASSWORD':
-          _showErrorSnackbar('Incorrect password. Please try again.');
-          break;
+      case 'ERROR_WRONG_PASSWORD':
+        _showErrorSnackbar('Incorrect password. Please try again.');
+        break;
 
-        case 'ERROR_TOO_MANY_ATTEMPTS':
-        case 'ERROR_ACCOUNT_LOCKED':
-          print("⚠️ Account locked. Fetching lock time...");
-          _fetchLockTime();
-          _showErrorSnackbar(
-              'Too many failed attempts. Please try again later.');
-          break;
+      case 'ERROR_TOO_MANY_ATTEMPTS':
+      case 'ERROR_ACCOUNT_LOCKED':
+        _fetchLockTime();
+        _showErrorSnackbar(
+            'Too many failed attempts. Please try again later.');
+        break;
 
-        case 'ERROR_EMAIL_NOT_VERIFIED':
-          _showErrorSnackbar('Please verify your email before logging in.');
-          break;
+      case 'ERROR_EMAIL_NOT_VERIFIED':
+        _showErrorSnackbar('Please verify your email before logging in.');
+        break;
 
-        default:
-          _showErrorSnackbar('An unknown error occurred. Please try again.');
-      }
+      default:
+        _showErrorSnackbar('An unknown error occurred. Please try again.');
     }
   }
+}
 
   void _showResetPasswordDialog() {
     TextEditingController emailController = TextEditingController();
@@ -392,7 +425,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
 
                           const SizedBox(height: 16),
-                          // Biometric Login Button
+                          /*// Biometric Login Button
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
@@ -404,7 +437,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 16),*/
 
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,

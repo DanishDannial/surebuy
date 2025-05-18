@@ -280,7 +280,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Biometric Toggle Switch
+                  /*// Biometric Toggle Switch
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -296,9 +296,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         onChanged: _toggleBiometric,
                       ),
                     ],
-                  ),
-
-                  const SizedBox(height: 20),
+                  ),*/
 
                   // Sign Out Button
                   ElevatedButton(
