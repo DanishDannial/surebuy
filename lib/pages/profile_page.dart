@@ -1,7 +1,3 @@
-//profile page
-
-//update profile
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -141,6 +137,76 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _editField(String field, String currentValue) async {
+    final controller = TextEditingController(text: currentValue);
+    final userEmail = email;
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit $field'),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(labelText: 'Enter new $field'),
+          keyboardType: field == "phone" ? TextInputType.phone : TextInputType.text,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newValue = controller.text.trim();
+
+              // Phone validation
+              if (field == "phone") {
+                final phoneRegExp = RegExp(r'^\d{10,15}$');
+                if (!phoneRegExp.hasMatch(newValue)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please enter a valid phone number (10-15 digits).")),
+                  );
+                  return;
+                }
+              }
+
+              // Address validation
+              if (field == "address" && newValue.length < 5) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Please enter a valid address (at least 5 characters).")),
+                );
+                return;
+              }
+
+              if (newValue.isNotEmpty) {
+                // Update Firestore
+                QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+                    .collection('customers')
+                    .where('email', isEqualTo: userEmail)
+                    .limit(1)
+                    .get();
+
+                if (querySnapshot.docs.isNotEmpty) {
+                  final docId = querySnapshot.docs.first.id;
+                  await FirebaseFirestore.instance
+                      .collection('customers')
+                      .doc(docId)
+                      .update({field: newValue});
+                  setState(() {
+                    if (field == "phone") phone = newValue;
+                    if (field == "address") address = newValue;
+                  });
+                }
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -201,9 +267,17 @@ class _ProfilePageState extends State<ProfilePage> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  ProfileCard(label: "Phone", value: phone),
+                  ProfileCard(
+                    label: "Phone",
+                    value: phone,
+                    onEdit: () => _editField("phone", phone),
+                  ),
                   const SizedBox(height: 10),
-                  ProfileCard(label: "Address", value: address),
+                  ProfileCard(
+                    label: "Address",
+                    value: address,
+                    onEdit: () => _editField("address", address),
+                  ),
                   const SizedBox(height: 20),
 
                   // Biometric Toggle Switch
@@ -254,8 +328,9 @@ class _ProfilePageState extends State<ProfilePage> {
 class ProfileCard extends StatelessWidget {
   final String label;
   final String value;
+  final VoidCallback? onEdit;
 
-  const ProfileCard({super.key, required this.label, required this.value});
+  const ProfileCard({super.key, required this.label, required this.value, this.onEdit});
 
   @override
   Widget build(BuildContext context) {
@@ -284,6 +359,11 @@ class ProfileCard extends StatelessWidget {
                 ),
               ),
             ),
+            if (onEdit != null)
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.blue),
+                onPressed: onEdit,
+              ),
           ],
         ),
       ),

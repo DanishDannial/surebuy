@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:surebuy/pages/payment_page.dart';
 import '../providers/cart_provider.dart';
@@ -131,7 +132,43 @@ class _CartPageState extends State<CartPage> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final user = FirebaseAuth.instance.currentUser;
+                    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+
+                    bool allAvailable = true;
+                    String unavailableProduct = '';
+
+                    for (final item in cartProvider.items) {
+                      final doc = await FirebaseFirestore.instance
+                          .collection('products')
+                          .doc(item.itemId)
+                          .get();
+                      if (doc.exists && doc['status'] != 'Available') {
+                        allAvailable = false;
+                        unavailableProduct = item.itemName;
+                        break;
+                      }
+                    }
+
+                    if (!allAvailable) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Product Unavailable'),
+                          content: Text(
+                              'The product "$unavailableProduct" is no longer available. Please remove it from your cart to proceed.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                      return;
+                    }
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(

@@ -4,6 +4,7 @@ import 'package:surebuy/pages/cart_page.dart';
 //import 'package:surebuy/pages/login_page.dart';
 import 'package:surebuy/pages/profile_page.dart';
 import 'package:surebuy/pages/shopping_page.dart';
+import 'package:surebuy/pages/wishlist_page.dart';
 // import 'package:surebuy/services/auth_service.dart';
 
 class CustomerHome extends StatefulWidget {
@@ -20,6 +21,7 @@ class _CustomerHomeState extends State<CustomerHome> {
   final List<Widget> _pages = [
     const ShoppingPage(),
     const CartPage(),
+    const WishListPage(),
     const ProfilePage()
   ];
 
@@ -55,6 +57,7 @@ class _CustomerHomeState extends State<CustomerHome> {
         items: const <Widget>[
           Icon(Icons.home, size: 30, color: Colors.white),
           Icon(Icons.shopping_cart, size: 30, color: Colors.white),
+          Icon(Icons.favorite, size: 30, color: Colors.white),
           Icon(Icons.person, size: 30, color: Colors.white),
         ],
         onTap: (index) {
