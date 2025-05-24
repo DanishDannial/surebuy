@@ -24,7 +24,7 @@ class _CustomerHomeState extends State<CustomerHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: _pages[_page],
       ),

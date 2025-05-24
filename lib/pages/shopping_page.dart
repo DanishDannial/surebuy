@@ -46,19 +46,9 @@ class _ShoppingPageState extends State<ShoppingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFE3F2FD),
-            Color(0xFFF8FAFC),
-            Color(0xFFFFFFFF),
-          ],
-        ),
-      ),
-      child: Padding(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,7 +75,7 @@ class _ShoppingPageState extends State<ShoppingPage> {
               ),
             ),
             const SizedBox(height: 24),
-
+            
             // Search Bar
             Container(
               decoration: BoxDecoration(
@@ -148,7 +138,7 @@ class _ShoppingPageState extends State<ShoppingPage> {
               ),
             ),
             const SizedBox(height: 24),
-
+            
             // Category Chips
             SizedBox(
               height: 40,
@@ -195,7 +185,7 @@ class _ShoppingPageState extends State<ShoppingPage> {
               ),
             ),
             const SizedBox(height: 24),
-
+            
             // Products Grid
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
@@ -214,7 +204,7 @@ class _ShoppingPageState extends State<ShoppingPage> {
                       ),
                     );
                   }
-
+            
                   final groups = snapshot.data!.docs.map((doc) {
                     return {
                       'title': doc['category'],
@@ -228,10 +218,10 @@ class _ShoppingPageState extends State<ShoppingPage> {
                       'id': doc.id,
                     };
                   }).toList();
-
+            
                   final filteredGroups = _getFilteredItems(
                       groups, selectedGroup, _searchController.text);
-
+            
                   if (filteredGroups.isEmpty) {
                     return Center(
                       child: Column(
@@ -266,7 +256,7 @@ class _ShoppingPageState extends State<ShoppingPage> {
                       ),
                     );
                   }
-
+            
                   return GridView.builder(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
@@ -285,7 +275,7 @@ class _ShoppingPageState extends State<ShoppingPage> {
                           ? product['price'][0]
                           : '';
                       final productId = product['id'];
-
+            
                       return GestureDetector(
                         onTap: () {
                           Navigator.push(
