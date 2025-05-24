@@ -27,7 +27,7 @@ class ProductDetailPage extends StatefulWidget {
 
 class ProductDetailPageState extends State<ProductDetailPage> {
   int quantity = 1;
-  bool favClick = false;
+  bool wishlistClick = false;
   String? selectedSize;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
@@ -39,6 +39,7 @@ class ProductDetailPageState extends State<ProductDetailPage> {
   void initState() {
     super.initState();
     _fetchProductDescription();
+    _checkIfWishListed();
   }
 
   Future<void> _fetchProductDescription() async {
@@ -83,6 +84,56 @@ class ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
+  Future<void> toggleWishList() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please log in to use wishlist.")),
+      );
+      return;
+    }
+
+    final wishlistRef = FirebaseFirestore.instance
+        .collection('wishlist')
+        .doc(user.uid)
+        .collection('items')
+        .doc(widget.id);
+
+    if (wishlistClick) {
+      await wishlistRef.delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("${widget.itemName} removed from wishlist")),
+      );
+    } else {
+      await wishlistRef.set({
+        'itemName': widget.itemName,
+        'imageUrl': widget.imageUrl,
+        'price': widget.price,
+        // add more fields if needed
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("${widget.itemName} added to wishlist")),
+      );
+    }
+    setState(() {
+      wishlistClick = !wishlistClick;
+    });
+  }
+
+  Future<void> _checkIfWishListed() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final wishlistDoc = await FirebaseFirestore.instance
+        .collection('wishlist')
+        .doc(user.uid)
+        .collection('items')
+        .doc(widget.id)
+        .get();
+    setState(() {
+      wishlistClick = wishlistDoc.exists;
+    });
+  }
+
   Future<String?> getCustomerId() async {
     final User? user = _auth.currentUser;
     if (user != null) {
@@ -122,15 +173,11 @@ class ProductDetailPageState extends State<ProductDetailPage> {
         ),
         actions: [
           IconButton(
-            icon: favClick
-                ? const Icon(Icons.favorite)
-                : const Icon(Icons.favorite_border),
-            onPressed: () {
-              setState(() {
-                favClick = !favClick;
-              });
-            },
-          ),
+          icon: wishlistClick
+              ? const Icon(Icons.favorite, color: Colors.red)
+              : const Icon(Icons.favorite_border),
+          onPressed: toggleWishList,
+        ),
         ],
       ),
       body: Column(

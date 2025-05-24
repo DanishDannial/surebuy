@@ -5,6 +5,7 @@ import 'package:flutter_windowmanager_plus/flutter_windowmanager_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:surebuy/pages/payment_completion_page.dart';
 import '../services/toyyibpay_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PaymentPage extends StatefulWidget {
   final double totalAmount;
@@ -62,8 +63,8 @@ class _PaymentPageState extends State<PaymentPage> {
 
       // Create payment bill via ToyyibPay
       String? paymentUrl = await _toyyibPayService.createBill(
-        apiKey: "n3yxm20v-d82i-4mzo-n11k-5rxlp3ei45hw",
-        categoryCode: "mng6ctzd",
+        apiKey: dotenv.env['TOYYIBPAY_API_KEY'] ?? '',
+        categoryCode: dotenv.env['TOYYIBPAY_CATEGORY_CODE'] ?? '',
         billName: "Test Payment",
         billDescription: "Purchase of Goods",
         billTo: name,

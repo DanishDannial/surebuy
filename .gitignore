@@ -1,13 +1,72 @@
-# Flutter build
+# -----------------------
+# Flutter / Dart
+# -----------------------
 build/
 .dart_tool/
 .packages
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+generated_plugin_registrant.dart
 pubspec.lock
 
-# APKs & binaries
-*.apk
+# -----------------------
+# Output files
+# -----------------------
 *.dill
+*.tmp
+*.log
 
-# Others
+# APKs / app bundles
+*.apk
+*.aab
+
+# iOS / macOS
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/ServiceDefinitions.json
+ios/Pods/
+macos/Pods/
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Android
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# Xcode
+*.xcworkspace
+*.xcuserstate
+*.xcuserdata
+
+# -----------------------
+# Firebase
+# -----------------------
+.firebase/
+firebase-debug.log
+firestore.indexes.json
+firestore.rules.bak
+firestore-export.json
+firestore-*.json
+
+# -----------------------
+# Toyyibpay
+# -----------------------
+# (If you store Toyyibpay keys in a file like .env or config.dart, ignore them)
+.env
+*.env
+lib/config.dart  # <-- only if it contains sensitive info
+
+# -----------------------
+# IDEs
+# -----------------------
 .idea/
 .vscode/
+
+# -----------------------
+# Others
+# -----------------------
+*.iml
+*.swp
