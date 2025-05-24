@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:surebuy/pages/customer_home.dart';
 import 'package:surebuy/pages/signup_page.dart';
 import 'package:surebuy/services/auth_service.dart';
@@ -80,95 +79,80 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<bool> _authenticateWithBiometricsAfterPassword() async {
-  final LocalAuthentication localAuth = LocalAuthentication();
-  bool canCheckBiometrics = await localAuth.canCheckBiometrics;
-  bool isDeviceSupported = await localAuth.isDeviceSupported();
-
-  if (!canCheckBiometrics || !isDeviceSupported) {
-    _showErrorSnackbar('Biometric authentication not supported on this device.');
-    return false;
-  }
-
-  try {
-    bool didAuthenticate = await localAuth.authenticate(
-      localizedReason: 'Please authenticate to continue',
-      options: const AuthenticationOptions(
-        biometricOnly: true,
-        useErrorDialogs: true,
-        stickyAuth: true,
-      ),
-    );
-    return didAuthenticate;
-  } catch (e) {
-    _showErrorSnackbar('Biometric authentication error: $e');
-    return false;
-  }
-}
-
   // Login function with lock handling
   void _login() async {
-  if (_formKey.currentState!.validate()) {
-    setState(() {
-      _isLoading = true;
-    });
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
 
-    String? result = await _authService.login(
-      email: _emailController.text,
-      password: _passwordController.text,
-    );
+      String? result = await _authService.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    switch (result) {
-      case 'SUCCESS':
-        // Email/password is correct, now require biometric authentication
-        bool biometricSuccess = await _authenticateWithBiometricsAfterPassword();
-        if (biometricSuccess) {
+      setState(() {
+        _isLoading = false;
+      });
+      print("PRINT: $result");
+      switch (result) {
+        case 'SUCCESS':
           User? user = FirebaseAuth.instance.currentUser;
           if (user != null) {
             String? idToken = await user.getIdToken();
             await secureStorage.write(key: 'firebase_token', value: idToken);
             await secureStorage.write(
                 key: 'email', value: _emailController.text);
+            print("✅ Firebase token stored for biometric login.");
           }
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const CustomerHome()),
+          // Require biometric authentication after password login
+          bool biometricSuccess = await _authService.authenticateWithBiometrics(
+            _showErrorSnackbar,
+            _startCountdown,
+            (bool isBiometricEnabled, bool isLocked, int countdown) {
+              setState(() {
+                _isBiometricEnabled = isBiometricEnabled;
+                _isLocked = isLocked;
+                _countdownSeconds = countdown;
+              });
+            },
           );
-        } else {
-          _showErrorSnackbar('Biometric authentication failed. Please try again.');
-          // Optionally, sign out the user if biometric fails
-          await FirebaseAuth.instance.signOut();
-        }
-        break;
+          if (biometricSuccess) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const CustomerHome()),
+            );
+          } else {
+            _showErrorSnackbar('Biometric authentication failed.');
+            await FirebaseAuth.instance.signOut();
+          }
+          break;
 
-      case 'ERROR_USER_NOT_FOUND':
-        _showErrorSnackbar('User not found. Please check your email.');
-        break;
+        case 'ERROR_USER_NOT_FOUND':
+          _showErrorSnackbar('User not found. Please check your email.');
+          break;
 
-      case 'ERROR_WRONG_PASSWORD':
-        _showErrorSnackbar('Incorrect password. Please try again.');
-        break;
+        case 'ERROR_WRONG_PASSWORD':
+          _showErrorSnackbar('Incorrect password. Please try again.');
+          break;
 
-      case 'ERROR_TOO_MANY_ATTEMPTS':
-      case 'ERROR_ACCOUNT_LOCKED':
-        _fetchLockTime();
-        _showErrorSnackbar(
-            'Too many failed attempts. Please try again later.');
-        break;
+        case 'ERROR_TOO_MANY_ATTEMPTS':
+        case 'ERROR_ACCOUNT_LOCKED':
+          print("⚠️ Account locked. Fetching lock time...");
+          _fetchLockTime();
+          _showErrorSnackbar(
+              'Too many failed attempts. Please try again later.');
+          break;
 
-      case 'ERROR_EMAIL_NOT_VERIFIED':
-        _showErrorSnackbar('Please verify your email before logging in.');
-        break;
+        case 'ERROR_EMAIL_NOT_VERIFIED':
+          _showErrorSnackbar('Please verify your email before logging in.');
+          break;
 
-      default:
-        _showErrorSnackbar('An unknown error occurred. Please try again.');
+        default:
+          _showErrorSnackbar('An unknown error occurred. Please try again.');
+      }
     }
   }
-}
 
   void _showResetPasswordDialog() {
     TextEditingController emailController = TextEditingController();
@@ -177,17 +161,45 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Reset Password'),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Reset Password',
+            style: TextStyle(
+              fontFamily: 'SF Pro Display',
+              fontWeight: FontWeight.w600,
+              color: Colors.blue.shade800,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Enter your email to receive a password reset link.'),
-              const SizedBox(height: 10),
+              Text(
+                'Enter your email to receive a password reset link.',
+                style: TextStyle(
+                  fontFamily: 'SF Pro Text',
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 20),
               TextField(
                 controller: emailController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Email',
-                  border: OutlineInputBorder(),
+                  labelStyle: TextStyle(
+                    fontFamily: 'SF Pro Text',
+                    color: Colors.grey.shade600,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -195,38 +207,67 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context), // Close dialog
-              child: const Text('Cancel'),
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontFamily: 'SF Pro Text',
+                  color: Colors.grey.shade600,
+                ),
+              ),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                String email = emailController.text.trim();
-                if (email.isEmpty) {
-                  _showErrorSnackbar('Please enter an email.');
-                  return;
-                }
-
-                try {
-                  String response = await _authService.resetPassword(email);
-
-                  if (response == "Sent") {
-                    Navigator.pop(context); // Close the dialog
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Password reset email sent! Check your inbox.'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } else {
-                    _showErrorSnackbar("ERROR: $response");
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade400, Colors.blue.shade600],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: TextButton(
+                onPressed: () async {
+                  String email = emailController.text.trim();
+                  if (email.isEmpty) {
+                    _showErrorSnackbar('Please enter an email.');
+                    return;
                   }
-                } catch (e) {
-                  _showErrorSnackbar(
-                      'Failed to send reset email. Please try again.');
-                }
-              },
-              child: const Text('Reset'),
+
+                  try {
+                    String response = await _authService.resetPassword(email);
+
+                    if (response == "Sent") {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text(
+                            'Password reset email sent! Check your inbox.',
+                            style: TextStyle(fontFamily: 'SF Pro Text'),
+                          ),
+                          backgroundColor: Colors.green.shade500,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                    } else {
+                      _showErrorSnackbar("ERROR: $response");
+                    }
+                  } catch (e) {
+                    _showErrorSnackbar(
+                        'Failed to send reset email. Please try again.');
+                  }
+                },
+                child: const Text(
+                  'Reset',
+                  style: TextStyle(
+                    fontFamily: 'SF Pro Text',
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ),
           ],
         );
@@ -236,8 +277,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: Colors.red,
+      content: Text(
+        message,
+        style: const TextStyle(fontFamily: 'SF Pro Text'),
+      ),
+      backgroundColor: Colors.red.shade500,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
     ));
   }
 
@@ -313,41 +361,121 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                const Text(
-                  'Welcome!',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Please login to your account',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
-                const SizedBox(height: 32),
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(16.0),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.blue.shade50,
+              Colors.white,
+              Colors.blue.shade50,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 40),
+                  
+                  // Logo Section
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.shade100,
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      'assets/surebuy_icon.png',
+                      height: 80,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 30),
+                  
+                  // Welcome Text
+                  Text(
+                    'Welcome Back',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'SF Pro Display',
+                      color: Colors.blue.shade800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sign in to your account',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'SF Pro Text',
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 30),
+                  
+                  // Form Container
+                  Container(
+                    padding: const EdgeInsets.all(30),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.shade100.withOpacity(0.3),
+                          blurRadius: 30,
+                          offset: const Offset(0, 15),
+                        ),
+                      ],
+                    ),
                     child: Form(
                       key: _formKey,
                       child: Column(
                         children: [
-                          Image.asset(
-                            'assets/surebuy_icon.png',
-                            height: 150,
-                          ),
-                          const SizedBox(height: 32),
+                          // Email Field
                           TextFormField(
                             controller: _emailController,
-                            decoration: const InputDecoration(
+                            style: const TextStyle(
+                              fontFamily: 'SF Pro Text',
+                              fontSize: 16,
+                            ),
+                            decoration: InputDecoration(
                               labelText: 'Email',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.email),
+                              labelStyle: TextStyle(
+                                fontFamily: 'SF Pro Text',
+                                color: Colors.grey.shade600,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.email_outlined,
+                                color: Colors.blue.shade400,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 18,
+                              ),
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -360,13 +488,26 @@ class _LoginScreenState extends State<LoginScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 16),
+                          
+                          const SizedBox(height: 20),
+                          
+                          // Password Field
                           TextFormField(
                             controller: _passwordController,
+                            style: const TextStyle(
+                              fontFamily: 'SF Pro Text',
+                              fontSize: 16,
+                            ),
                             decoration: InputDecoration(
                               labelText: 'Password',
-                              border: const OutlineInputBorder(),
-                              prefixIcon: const Icon(Icons.lock),
+                              labelStyle: TextStyle(
+                                fontFamily: 'SF Pro Text',
+                                color: Colors.grey.shade600,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.lock_outline,
+                                color: Colors.blue.shade400,
+                              ),
                               suffixIcon: IconButton(
                                 onPressed: () {
                                   setState(() {
@@ -375,9 +516,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                                 icon: Icon(
                                   isPasswordHidden
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: Colors.grey.shade500,
                                 ),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 18,
                               ),
                             ),
                             validator: (value) {
@@ -389,88 +545,138 @@ class _LoginScreenState extends State<LoginScreen> {
                             obscureText: isPasswordHidden,
                           ),
 
+                          // Forgot Password
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: _showResetPasswordDialog,
-                              child: const Text(
+                              child: Text(
                                 'Forgot Password?',
-                                style:
-                                    TextStyle(color: Colors.blue, fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Show countdown message if locked
-                          if (_isLocked)
-                            Text(
-                              'Account locked. Try again in '
-                              '$_countdownSeconds seconds.',
-                              style: const TextStyle(
-                                  color: Colors.red, fontSize: 16),
-                            ),
-                          const SizedBox(height: 8),
-
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _isLocked ? null : _login,
-                              child: _isLoading
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white,
-                                    )
-                                  : const Text('Login'),
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-                          /*// Biometric Login Button
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _isBiometricEnabled
-                                  ? _authenticateWithBiometrics
-                                  : null,
-                              icon: const Icon(Icons.fingerprint),
-                              label: const Text('Login with Biometrics'),
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),*/
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              const Text(
-                                "Don't have an account? ",
-                                style: TextStyle(fontSize: 18),
-                              ),
-                              InkWell(
-                                onTap: () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => const SignUpScreen()),
-                                  );
-                                },
-                                child: const Text(
-                                  "Signup here",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                  ),
+                                style: TextStyle(
+                                  color: Colors.blue.shade600,
+                                  fontSize: 14,
+                                  fontFamily: 'SF Pro Text',
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                            ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          // Lock Warning
+                          if (_isLocked)
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.red.shade200),
+                              ),
+                              child: Text(
+                                'Account locked. Try again in $_countdownSeconds seconds.',
+                                style: TextStyle(
+                                  color: Colors.red.shade700,
+                                  fontSize: 14,
+                                  fontFamily: 'SF Pro Text',
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+
+                          // Login Button
+                          Container(
+                            width: double.infinity,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: _isLocked 
+                                ? LinearGradient(
+                                    colors: [Colors.grey.shade300, Colors.grey.shade400],
+                                  )
+                                : LinearGradient(
+                                    colors: [Colors.blue.shade400, Colors.blue.shade600],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                              borderRadius: BorderRadius.circular(15),
+                              boxShadow: _isLocked ? null : [
+                                BoxShadow(
+                                  color: Colors.blue.shade300.withOpacity(0.4),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _isLocked ? null : _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Login',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'SF Pro Text',
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 15),
+
+                  // Sign Up Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Don't have an account? ",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'SF Pro Text',
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const SignUpScreen()),
+                          );
+                        },
+                        child: Text(
+                          "Sign Up",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'SF Pro Text',
+                            color: Colors.blue.shade600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

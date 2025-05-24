@@ -32,7 +32,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _signOut() async {
-    // await _authService.logout();
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -99,7 +98,6 @@ class _ProfilePageState extends State<ProfilePage> {
           if (savedEmail == null || savedEmail.isEmpty) {
             print("⚠️ No email found, storing it now...");
 
-            // Fetch email from Firestore again if needed
             QuerySnapshot querySnapshot = await FirebaseFirestore.instance
                 .collection('customers')
                 .limit(1)
@@ -118,205 +116,286 @@ class _ProfilePageState extends State<ProfilePage> {
           await secureStorage.write(key: 'biometric_enabled', value: 'true');
           setState(() => _isBiometricEnabled = true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Biometric login enabled")),
+            SnackBar(
+              content: const Text(
+                "Biometric login enabled",
+                style: TextStyle(fontFamily: 'SF Pro Display'),
+              ),
+              backgroundColor: const Color(0xFF4A90E2),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  "Biometric authentication not supported on this device")),
+          SnackBar(
+            content: const Text(
+              "Biometric authentication not supported on this device",
+              style: TextStyle(fontFamily: 'SF Pro Display'),
+            ),
+            backgroundColor: Colors.orange.shade400,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
       }
     } else {
       await secureStorage.write(key: 'biometric_enabled', value: 'false');
       setState(() => _isBiometricEnabled = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Biometric login disabled")),
+        SnackBar(
+          content: const Text(
+            "Biometric login disabled",
+            style: TextStyle(fontFamily: 'SF Pro Display'),
+          ),
+          backgroundColor: Colors.grey.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       );
     }
-  }
-
-  Future<void> _editField(String field, String currentValue) async {
-    final controller = TextEditingController(text: currentValue);
-    final userEmail = email;
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit $field'),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: 'Enter new $field'),
-          keyboardType: field == "phone" ? TextInputType.phone : TextInputType.text,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final newValue = controller.text.trim();
-
-              // Phone validation
-              if (field == "phone") {
-                final phoneRegExp = RegExp(r'^\d{10,15}$');
-                if (!phoneRegExp.hasMatch(newValue)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please enter a valid phone number (10-15 digits).")),
-                  );
-                  return;
-                }
-              }
-
-              // Address validation
-              if (field == "address" && newValue.length < 5) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Please enter a valid address (at least 5 characters).")),
-                );
-                return;
-              }
-
-              if (newValue.isNotEmpty) {
-                // Update Firestore
-                QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-                    .collection('customers')
-                    .where('email', isEqualTo: userEmail)
-                    .limit(1)
-                    .get();
-
-                if (querySnapshot.docs.isNotEmpty) {
-                  final docId = querySnapshot.docs.first.id;
-                  await FirebaseFirestore.instance
-                      .collection('customers')
-                      .doc(docId)
-                      .update({field: newValue});
-                  setState(() {
-                    if (field == "phone") phone = newValue;
-                    if (field == "address") address = newValue;
-                  });
-                }
-              }
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        centerTitle: true,
-        backgroundColor: Colors.blueAccent,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile Header Section
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              decoration: const BoxDecoration(
-                color: Colors.blueAccent,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-              ),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.white,
-                    child: const Icon(
-                      Icons.person,
-                      size: 60,
-                      color: Colors.blueAccent,
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE3F2FD),
+              Color(0xFFF8FAFC),
+              Color(0xFFFFFFFF),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                // Profile Header Section
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF4A90E2),
+                        Color(0xFF357ABD),
+                        Color(0xFF2E5984),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    email,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Profile Details Section
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  ProfileCard(
-                    label: "Phone",
-                    value: phone,
-                    onEdit: () => _editField("phone", phone),
-                  ),
-                  const SizedBox(height: 10),
-                  ProfileCard(
-                    label: "Address",
-                    value: address,
-                    onEdit: () => _editField("address", address),
-                  ),
-                  const SizedBox(height: 20),
-
-                  /*// Biometric Toggle Switch
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Enable Biometric Login",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Switch(
-                        value: _isBiometricEnabled,
-                        onChanged: _toggleBiometric,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4A90E2).withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       ),
                     ],
-                  ),*/
-
-                  // Sign Out Button
-                  ElevatedButton(
-                    onPressed: _signOut,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 50,
-                        vertical: 15,
-                      ),
-                    ),
-                    child: const Text(
-                      "Sign Out",
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
                   ),
-                ],
-              ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(50),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.person_outline,
+                          size: 50,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontFamily: 'SF Pro Display',
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        email,
+                        style: const TextStyle(
+                          fontFamily: 'SF Pro Display',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white70,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Profile Details Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      ProfileCard(
+                        icon: Icons.phone_outlined,
+                        label: "Phone Number",
+                        value: phone,
+                      ),
+                      const SizedBox(height: 16),
+                      ProfileCard(
+                        icon: Icons.location_on_outlined,
+                        label: "Address",
+                        value: address,
+                      ),
+                      //const SizedBox(height: 24),
+
+                      /*// Biometric Toggle Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4A90E2).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.fingerprint,
+                                color: Color(0xFF4A90E2),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Biometric Login",
+                                    style: TextStyle(
+                                      fontFamily: 'SF Pro Display',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1A1A1A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _isBiometricEnabled ? "Enabled" : "Disabled",
+                                    style: const TextStyle(
+                                      fontFamily: 'SF Pro Display',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xFF6B7280),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Transform.scale(
+                              scale: 0.8,
+                              child: Switch(
+                                value: _isBiometricEnabled,
+                                onChanged: _toggleBiometric,
+                                activeColor: const Color(0xFF4A90E2),
+                                activeTrackColor: const Color(0xFF4A90E2).withOpacity(0.3),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),*/
+
+                      const SizedBox(height: 32),
+
+                      // Sign Out Button
+                      Container(
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.red.shade400,
+                              Colors.red.shade600,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _signOut,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.logout_outlined,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                "Sign Out",
+                                style: TextStyle(
+                                  fontFamily: 'SF Pro Display',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -324,46 +403,75 @@ class _ProfilePageState extends State<ProfilePage> {
 }
 
 class ProfileCard extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  final VoidCallback? onEdit;
 
-  const ProfileCard({super.key, required this.label, required this.value, this.onEdit});
+  const ProfileCard({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Text(
-              "$label: ",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFF4A90E2).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            Expanded(
-              child: Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
+            child: Icon(
+              icon,
+              color: const Color(0xFF4A90E2),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF6B7280),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+              ],
             ),
-            if (onEdit != null)
-              IconButton(
-                icon: const Icon(Icons.edit, color: Colors.blue),
-                onPressed: onEdit,
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
