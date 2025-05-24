@@ -26,11 +26,56 @@ class _CartPageState extends State<CartPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("My Cart")),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Consumer<CartProvider>(
         builder: (context, cartProvider, child) {
           if (cartProvider.items.isEmpty) {
-            return const Center(child: Text("Your cart is empty."));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xFF3B82F6).withOpacity(0.1),
+                          const Color(0xFF1E40AF).withOpacity(0.1),
+                        ],
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 60,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    "Your cart is empty",
+                    style: TextStyle(
+                      fontFamily: '.SF Pro Display',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Add some items to get started",
+                    style: TextStyle(
+                      fontFamily: '.SF Pro Text',
+                      fontSize: 16,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           double subtotal = cartProvider.items.fold(
@@ -38,149 +83,348 @@ class _CartPageState extends State<CartPage> {
             (sum, item) => sum + (item.price * item.quantity),
           );
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: cartProvider.items.length,
-                    itemBuilder: (context, index) {
-                      final item = cartProvider.items[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              item.imageUrl.isNotEmpty
-                                  ? Image.network(item.imageUrl, width: 80, height: 80)
-                                  : const Icon(Icons.shopping_cart, size: 80),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(item.itemName,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold, fontSize: 16)),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "RM ${item.price.toStringAsFixed(2)}"
-                                      "${item.size != null && item.size.isNotEmpty ? " | Size: ${item.size}" : ""}",
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: cartProvider.items.length,
+                  itemBuilder: (context, index) {
+                    final item = cartProvider.items[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: const Color(0xFFF3F4F6),
+                              ),
+                              child: item.imageUrl.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        item.imageUrl,
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.shopping_bag_outlined,
+                                      size: 40,
+                                      color: Color(0xFF9CA3AF),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.remove),
-                                          onPressed: () {
-                                            final user = FirebaseAuth.instance.currentUser;
-                                            if (user != null &&
-                                                item.id != null &&
-                                                item.quantity > 1) {
-                                              cartProvider.updateQuantity(
-                                                  user.uid, item.id!, item.quantity - 1);
-                                            }
-                                          },
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.itemName,
+                                    style: const TextStyle(
+                                      fontFamily: '.SF Pro Display',
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                      color: Color(0xFF111827),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        "RM ${item.price.toStringAsFixed(2)}",
+                                        style: const TextStyle(
+                                          fontFamily: '.SF Pro Text',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF3B82F6),
                                         ),
-                                        Text('${item.quantity}',
-                                            style: const TextStyle(fontSize: 16)),
-                                        IconButton(
-                                          icon: const Icon(Icons.add),
-                                          onPressed: () {
-                                            final user = FirebaseAuth.instance.currentUser;
-                                            if (user != null && item.id != null) {
-                                              cartProvider.updateQuantity(
-                                                  user.uid, item.id!, item.quantity + 1);
-                                            }
-                                          },
-                                        ),
-                                        const Spacer(),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete, color: Colors.red),
-                                          onPressed: () {
-                                            final user = FirebaseAuth.instance.currentUser;
-                                            if (user != null && item.id != null) {
-                                              cartProvider.removeFromCart(user.uid, item.id!);
-                                            }
-                                          },
+                                      ),
+                                      if (item.size != null && item.size!.isNotEmpty) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEFF6FF),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            item.size!,
+                                            style: const TextStyle(
+                                              fontFamily: '.SF Pro Text',
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xFF3B82F6),
+                                            ),
+                                          ),
                                         ),
                                       ],
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF3F4F6),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            GestureDetector(
+                                              onTap: () {
+                                                final user = FirebaseAuth.instance.currentUser;
+                                                if (user != null &&
+                                                    item.id != null &&
+                                                    item.quantity > 1) {
+                                                  cartProvider.updateQuantity(
+                                                      user.uid, item.id!, item.quantity - 1);
+                                                }
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.all(8),
+                                                child: const Icon(
+                                                  Icons.remove,
+                                                  size: 16,
+                                                  color: Color(0xFF6B7280),
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16, vertical: 8),
+                                              child: Text(
+                                                '${item.quantity}',
+                                                style: const TextStyle(
+                                                  fontFamily: '.SF Pro Text',
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Color(0xFF111827),
+                                                ),
+                                              ),
+                                            ),
+                                            GestureDetector(
+                                              onTap: () {
+                                                final user = FirebaseAuth.instance.currentUser;
+                                                if (user != null && item.id != null) {
+                                                  cartProvider.updateQuantity(
+                                                      user.uid, item.id!, item.quantity + 1);
+                                                }
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.all(8),
+                                                child: const Icon(
+                                                  Icons.add,
+                                                  size: 16,
+                                                  color: Color(0xFF6B7280),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      GestureDetector(
+                                        onTap: () {
+                                          final user = FirebaseAuth.instance.currentUser;
+                                          if (user != null && item.id != null) {
+                                            cartProvider.removeFromCart(user.uid, item.id!);
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFEF2F2),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Icon(
+                                            Icons.delete_outline,
+                                            size: 20,
+                                            color: Color(0xFFEF4444),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const Divider(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text("Subtotal:",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text("RM ${subtotal.toStringAsFixed(2)}",
-                        style: const TextStyle(
-                            fontSize: 18, color: Colors.green, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () async {
-                    final user = FirebaseAuth.instance.currentUser;
-                    final cartProvider = Provider.of<CartProvider>(context, listen: false);
-
-                    bool allAvailable = true;
-                    String unavailableProduct = '';
-
-                    for (final item in cartProvider.items) {
-                      final doc = await FirebaseFirestore.instance
-                          .collection('products')
-                          .doc(item.itemId)
-                          .get();
-                      if (doc.exists && doc['status'] != 'Available') {
-                        allAvailable = false;
-                        unavailableProduct = item.itemName;
-                        break;
-                      }
-                    }
-
-                    if (!allAvailable) {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Product Unavailable'),
-                          content: Text(
-                              'The product "$unavailableProduct" is no longer available. Please remove it from your cart to proceed.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('OK'),
                             ),
                           ],
                         ),
-                      );
-                      return;
-                    }
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PaymentPage(totalAmount: subtotal),
                       ),
                     );
                   },
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-                  child: const Text("Proceed to Payment"),
                 ),
-              ],
-            ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Subtotal",
+                            style: TextStyle(
+                              fontFamily: '.SF Pro Display',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF374151),
+                            ),
+                          ),
+                          Text(
+                            "RM ${subtotal.toStringAsFixed(2)}",
+                            style: const TextStyle(
+                              fontFamily: '.SF Pro Display',
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF3B82F6),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF3B82F6),
+                              Color(0xFF1E40AF),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF3B82F6).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final user = FirebaseAuth.instance.currentUser;
+                            final cartProvider = Provider.of<CartProvider>(context, listen: false);
+
+                            bool allAvailable = true;
+                            String unavailableProduct = '';
+
+                            for (final item in cartProvider.items) {
+                              final doc = await FirebaseFirestore.instance
+                                  .collection('products')
+                                  .doc(item.itemId)
+                                  .get();
+                              if (doc.exists && doc['status'] != 'Available') {
+                                allAvailable = false;
+                                unavailableProduct = item.itemName;
+                                break;
+                              }
+                            }
+
+                            if (!allAvailable) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  backgroundColor: Colors.white,
+                                  title: const Text(
+                                    'Product Unavailable',
+                                    style: TextStyle(
+                                      fontFamily: '.SF Pro Display',
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  content: Text(
+                                    'The product "$unavailableProduct" is no longer available. Please remove it from your cart to proceed.',
+                                    style: const TextStyle(
+                                      fontFamily: '.SF Pro Text',
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text(
+                                        'OK',
+                                        style: TextStyle(
+                                          fontFamily: '.SF Pro Text',
+                                          color: Color(0xFF3B82F6),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              return;
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PaymentPage(totalAmount: subtotal),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            "Proceed to Payment",
+                            style: TextStyle(
+                              fontFamily: '.SF Pro Display',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),

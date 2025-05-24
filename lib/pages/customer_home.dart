@@ -24,15 +24,9 @@ class _CustomerHomeState extends State<CustomerHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      //backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 16.0),
-            Expanded(
-              child: _pages[_page],
-            ),
-          ],
-        ),
+        child: _pages[_page],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
