@@ -24,11 +24,23 @@ class _ProfilePageState extends State<ProfilePage> {
   String address = "Loading...";
   bool _isBiometricEnabled = false;
 
+  // Controllers for editing
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  String? _userDocId; // Store document ID for updates
+
   @override
   void initState() {
     super.initState();
     _fetchUserData();
     _loadBiometricStatus();
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _addressController.dispose();
+    super.dispose();
   }
 
   void _signOut() async {
@@ -55,6 +67,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
         if (querySnapshot.docs.isNotEmpty) {
           DocumentSnapshot userDoc = querySnapshot.docs.first;
+          _userDocId = userDoc.id; // Store document ID
           Map<String, dynamic> userData =
               userDoc.data() as Map<String, dynamic>;
 
@@ -63,6 +76,10 @@ class _ProfilePageState extends State<ProfilePage> {
             phone = userData['phone'] ?? "No Phone";
             address = userData['address'] ?? "No Address";
           });
+          
+          // Update controllers with current values
+          _phoneController.text = phone;
+          _addressController.text = address;
         }
       }
     } catch (e) {
@@ -157,6 +174,214 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _showEditDialog(String field, String currentValue, TextEditingController controller) async {
+    controller.text = currentValue;
+    
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4A90E2).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        field == 'Phone Number' ? Icons.phone_outlined : Icons.location_on_outlined,
+                        color: const Color(0xFF4A90E2),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Edit $field',
+                      style: const TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: controller,
+                    style: const TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Enter your $field',
+                      hintStyle: const TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF94A3B8),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                    maxLines: field == 'Address' ? 3 : 1,
+                    keyboardType: field == 'Phone Number' ? TextInputType.phone : TextInputType.streetAddress,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontFamily: 'SF Pro Display',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF4A90E2),
+                              Color(0xFF357ABD),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: TextButton(
+                          onPressed: () async {
+                            await _updateUserField(field, controller.text.trim());
+                            Navigator.of(context).pop();
+                          },
+                          style: TextButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Save',
+                            style: TextStyle(
+                              fontFamily: 'SF Pro Display',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _updateUserField(String field, String newValue) async {
+    if (_userDocId == null || newValue.isEmpty) return;
+
+    try {
+      String fieldKey = field == 'Phone Number' ? 'phone' : 'address';
+      
+      await FirebaseFirestore.instance
+          .collection('customers')
+          .doc(_userDocId)
+          .update({fieldKey: newValue});
+
+      setState(() {
+        if (field == 'Phone Number') {
+          phone = newValue;
+        } else {
+          address = newValue;
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$field updated successfully',
+            style: const TextStyle(fontFamily: 'SF Pro Display'),
+          ),
+          backgroundColor: const Color(0xFF4A90E2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } catch (e) {
+      print("Error updating $field: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to update $field',
+            style: const TextStyle(fontFamily: 'SF Pro Display'),
+          ),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -239,88 +464,19 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    ProfileCard(
+                    EditableProfileCard(
                       icon: Icons.phone_outlined,
                       label: "Phone Number",
                       value: phone,
+                      onEdit: () => _showEditDialog("Phone Number", phone, _phoneController),
                     ),
                     const SizedBox(height: 16),
-                    ProfileCard(
+                    EditableProfileCard(
                       icon: Icons.location_on_outlined,
                       label: "Address",
                       value: address,
+                      onEdit: () => _showEditDialog("Address", address, _addressController),
                     ),
-                    //const SizedBox(height: 24),
-      
-                    /*// Biometric Toggle Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4A90E2).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.fingerprint,
-                              color: Color(0xFF4A90E2),
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Biometric Login",
-                                  style: TextStyle(
-                                    fontFamily: 'SF Pro Display',
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF1A1A1A),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _isBiometricEnabled ? "Enabled" : "Disabled",
-                                  style: const TextStyle(
-                                    fontFamily: 'SF Pro Display',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xFF6B7280),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Transform.scale(
-                            scale: 0.8,
-                            child: Switch(
-                              value: _isBiometricEnabled,
-                              onChanged: _toggleBiometric,
-                              activeColor: const Color(0xFF4A90E2),
-                              activeTrackColor: const Color(0xFF4A90E2).withOpacity(0.3),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),*/
-      
                     const SizedBox(height: 32),
       
                     // Sign Out Button
@@ -377,13 +533,108 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                     ),
-                    //const SizedBox(height: 32),
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class EditableProfileCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onEdit;
+
+  const EditableProfileCard({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFF4A90E2).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xFF4A90E2),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: onEdit,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A90E2).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.edit_outlined,
+                color: Color(0xFF4A90E2),
+                size: 18,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

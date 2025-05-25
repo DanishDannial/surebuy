@@ -45,5 +45,6 @@ flutter:
   assets:
     - .env
     - assets/surebuy_icon.png
+    - assets/surebuy.png
     - assets/img.png
     - assets/app_icon.png

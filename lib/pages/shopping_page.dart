@@ -74,7 +74,7 @@ class _ShoppingPageState extends State<ShoppingPage> {
                 color: Color(0xFF6B7280),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
             
             // Search Bar
             Container(
@@ -137,7 +137,7 @@ class _ShoppingPageState extends State<ShoppingPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             
             // Category Chips
             SizedBox(
@@ -184,7 +184,7 @@ class _ShoppingPageState extends State<ShoppingPage> {
                     .toList(),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             
             // Products Grid
             Expanded(

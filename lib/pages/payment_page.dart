@@ -306,8 +306,8 @@ class _PaymentPageState extends State<PaymentPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                // Security notice
+                //const SizedBox(height: 16),
+                /*// Security notice
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -330,7 +330,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       ),
                     ),
                   ],
-                ),
+                ),*/
                 const SizedBox(height: 32),
               ],
             ),

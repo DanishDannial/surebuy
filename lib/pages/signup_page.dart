@@ -130,7 +130,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     Center(
                       child: Container(
                         width: 80,
@@ -160,7 +160,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 10),
                     const Center(
                       child: Text(
                         'Create Account',
@@ -186,7 +186,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
                     _buildTextField(
                       controller: _nameController,
                       label: 'Full Name',
@@ -236,7 +236,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     const SizedBox(height: 20),
                     _buildPasswordField(),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
                     _isLoading
                         ? Center(
                             child: Container(
@@ -292,7 +292,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                             ),
                           ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

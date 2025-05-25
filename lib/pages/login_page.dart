@@ -380,7 +380,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
                   
                   // Logo Section
                   Container(
@@ -397,12 +397,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     child: Image.asset(
-                      'assets/surebuy_icon.png',
-                      height: 80,
+                      'assets/surebuy.png',
+                      height: 120,
                     ),
                   ),
                   
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 15),
                   
                   // Welcome Text
                   Text(
@@ -425,7 +425,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 15),
                   
                   // Form Container
                   Container(
